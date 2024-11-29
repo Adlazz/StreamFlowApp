@@ -12,28 +12,53 @@ def setup_download_dir():
 
 def get_video_info(url):
     """Get video information without downloading"""
+    ydl_opts = {
+        'quiet': True,
+        'no_warnings': True,
+        'extract_flat': True,
+        'nocheckcertificate': True,
+        'ignoreerrors': False,
+        # Add cookie handling
+        'cookiesfrombrowser': ('chrome',),  # Try to use Chrome cookies
+        # Add user agent
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        # Add referer
+        'referer': 'https://www.youtube.com/'
+    }
     try:
-        with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             return info
     except Exception as e:
+        st.error(f"Error getting video info: {str(e)}")
         return None
 
 def download_content(url, format_type, quality, audio_format="mp3"):
     """Download content with specified options"""
     download_dir = setup_download_dir()
     
-    # Base options
+    # Base options with additional parameters
     ydl_opts = {
         'outtmpl': os.path.join(download_dir, '%(title)s.%(ext)s'),
         'quiet': False,
         'no_warnings': False,
+        'nocheckcertificate': True,
+        'ignoreerrors': False,
+        'geo_bypass': True,
+        'cookiesfrombrowser': ('chrome',),  # Try to use Chrome cookies
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'referer': 'https://www.youtube.com/',
+        'format_sort': ['res','ext'],
+        'extractor_retries': 5,
+        'file_access_retries': 5,
+        'fragment_retries': 5,
+        'retries': 5
     }
     
     try:
         if format_type == "audio":
             ydl_opts.update({
-                'format': 'bestaudio/best',
+                'format': 'bestaudio',  # Changed from bestaudio/best
                 'extractaudio': True,
                 'postprocessors': [{
                     'key': 'FFmpegExtractAudio',
@@ -41,26 +66,39 @@ def download_content(url, format_type, quality, audio_format="mp3"):
                     'preferredquality': quality,
                 }],
             })
-            
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(url, download=True)
-                return os.path.join(download_dir, f"{info['title']}.{audio_format}")
         else:
-            ydl_opts.update({
-                'format': 'best' if quality == "best" else f'best[height<={quality}]',
-                'merge_output_format': 'mp4',
-                'postprocessors': [{
-                    'key': 'FFmpegVideoConvertor',
-                    'preferedformat': 'mp4',
-                }],
-            })
+            if quality == "best":
+                format_spec = 'bestvideo+bestaudio/best'
+            else:
+                format_spec = f'bestvideo[height<={quality}]+bestaudio/best[height<={quality}]'
             
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl_opts.update({
+                'format': format_spec,
+                'merge_output_format': 'mp4'
+            })
+        
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            try:
+                # Primero intentamos obtener la info
+                info = ydl.extract_info(url, download=False)
+                if info is None:
+                    raise Exception("No se pudo obtener la información del video")
+                
+                # Si la info está bien, procedemos con la descarga
                 info = ydl.extract_info(url, download=True)
-                return os.path.join(download_dir, f"{info['title']}.mp4")
+                if format_type == "audio":
+                    return os.path.join(download_dir, f"{info['title']}.{audio_format}")
+                else:
+                    return os.path.join(download_dir, f"{info['title']}.mp4")
+                    
+            except yt_dlp.utils.DownloadError as e:
+                st.error(f"Error de descarga: {str(e)}")
+                return None
                 
     except Exception as e:
         st.error(f"Error durante la descarga: {str(e)}")
+        if hasattr(e, 'msg'):
+            st.error(f"Detalles adicionales: {e.msg}")
         return None
 
 def main():
