@@ -18,8 +18,6 @@ def get_video_info(url):
         'extract_flat': True,
         'nocheckcertificate': True,
         'ignoreerrors': False,
-        # Add cookie handling
-        'cookiesfrombrowser': ('chrome',),  # Try to use Chrome cookies
         # Add user agent
         'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         # Add referer
@@ -45,7 +43,6 @@ def download_content(url, format_type, quality, audio_format="mp3"):
         'nocheckcertificate': True,
         'ignoreerrors': False,
         'geo_bypass': True,
-        'cookiesfrombrowser': ('chrome',),  # Try to use Chrome cookies
         'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'referer': 'https://www.youtube.com/',
         'format_sort': ['res','ext'],
