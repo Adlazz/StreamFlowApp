@@ -19,13 +19,12 @@ def get_video_info(url):
     except Exception as e:
         return None
 
-def download_content(url, format_type, quality, ffmpeg_path, audio_format="mp3"):
+def download_content(url, format_type, quality, audio_format="mp3"):
     """Download content with specified options"""
     download_dir = setup_download_dir()
     
     # Base options
     ydl_opts = {
-        'ffmpeg_location': ffmpeg_path,
         'outtmpl': os.path.join(download_dir, '%(title)s.%(ext)s'),
         'quiet': False,
         'no_warnings': False,
@@ -62,13 +61,12 @@ def download_content(url, format_type, quality, ffmpeg_path, audio_format="mp3")
                 
     except Exception as e:
         st.error(f"Error durante la descarga: {str(e)}")
-        st.error(f"Comando FFmpeg: {ffmpeg_path}")
         return None
 
 def main():
-    st.set_page_config(page_title="StreamFlow", page_icon="🎵")
+    st.set_page_config(page_title="Media Downloader", page_icon="🎵")
    
-    st.title("🎵 StreamFlow")
+    st.title("🎵 Media Downloader")
     st.write("Download your favorite content in various formats")
     
     # Nueva sección de información
@@ -135,9 +133,6 @@ def main():
         quality = st.selectbox("Select Quality:", ["720", "1080", "best"])
         quality_text = "Best Quality" if quality == "best" else f"{quality}p"
     
-    # FFmpeg path input
-    ffmpeg_path = st.text_input("FFmpeg Path:", value="C:\\ffmpeg\\bin\\ffmpeg.exe")
-    
     if st.button("Get Information"):
         if url:
             with st.spinner("Fetching video information..."):
@@ -156,16 +151,11 @@ def main():
     
     if st.button("Download"):
         if url:
-            if not os.path.exists(ffmpeg_path):
-                st.error("FFmpeg not found. Please check the path.")
-                return
-                
             with st.spinner(f"Downloading {format_type} in {quality_text}..."):
                 output_file = download_content(
                     url, 
                     format_type, 
                     quality, 
-                    ffmpeg_path,
                     audio_format if format_type == "audio" else "mp4"
                 )
                 
